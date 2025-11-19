@@ -100,51 +100,49 @@ with tabs[1]:
     
     col_t7_1, col_t7_2, col_t7_3 = st.columns(3)
     
-    # --- Cột 1: Chọn Đài ---
+    # --- Cột 1: Chọn Đài (ĐÃ SỬA LẠI ĐÚNG LỊCH T7) ---
     with col_t7_1:
         region_t7 = st.radio("Chọn Miền", ["Miền Nam", "Miền Trung"], horizontal=True)
+        
+        # Định nghĩa cứng danh sách đài Thứ 7 chuẩn
         if region_t7 == "Miền Nam":
+            # 4 đài MN Thứ 7
             stations_t7 = ["Hồ Chí Minh", "Long An", "Bình Phước", "Hậu Giang"]
         else:
+            # 3 đài MT Thứ 7
             stations_t7 = ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"]
+        
+        # Chỉ hiển thị các đài đúng lịch Thứ 7
         station_sel = st.selectbox("Chọn đài Thứ 7", stations_t7)
 
-    # --- Cột 2: Chọn Giải (ĐÃ CẬP NHẬT COMBO ĐỒNG THỜI) ---
+    # --- Cột 2: Chọn Giải (Có nút bấm nhanh) ---
     with col_t7_2:
         st.write("<b>Chọn Giải để tính Nhị Hợp:</b>", unsafe_allow_html=True)
         
-        prizes_labels = ["ĐB", "G1", "G2", "G3-1", "G3-2", "G4-1", "G4-2", "G4-3", "G4-4", "G4-5", "G4-6", "G4-7", "G5", "G6-1", "G6-2", "G6-3", "G7", "G8"]
+        prizes_labels = ["ĐB", "G1", "G7", "G8"]
         
+        # Khởi tạo session state nếu chưa có
         if "t7_selected_prizes" not in st.session_state:
             st.session_state.t7_selected_prizes = []
 
-        # === CÁC NÚT BẤM CHỨC NĂNG ===
-        # Hàng 1: Các lựa chọn lẻ
-        b1, b2 = st.columns(2)
-        if b1.button("G1 + ĐB", use_container_width=True):
-            st.session_state.t7_selected_prizes = ["ĐB", "G1"]
+        # Hai nút bấm điều khiển
+        c_btn1, c_btn2 = st.columns(2)
+        if c_btn1.button("✅ Chọn Hết", use_container_width=True):
+            st.session_state.t7_selected_prizes = prizes_labels
             st.rerun()
-            
-        if b2.button("G7 + G8", use_container_width=True):
-            st.session_state.t7_selected_prizes = ["G7", "G8"]
-            st.rerun()
-            
-        # Hàng 2: Chọn đồng thời và Xóa
-        b3, b4 = st.columns(2)
-        if b3.button("🔥 Combo 4 Giải", use_container_width=True, help="Chọn đồng thời ĐB, G1, G7, G8"):
-            st.session_state.t7_selected_prizes = ["ĐB", "G1", "G7", "G8"]
-            st.rerun()
-            
-        if b4.button("❌ Xóa", use_container_width=True):
+        
+        if c_btn2.button("❌ Bỏ Chọn", use_container_width=True):
             st.session_state.t7_selected_prizes = []
             st.rerun()
 
-        # Multiselect
+        # Multiselect liên kết với session_state
         selected_prizes = st.multiselect(
-            "Các giải đang chọn:", 
+            "Tick giải:", 
             prizes_labels, 
             key="t7_selected_prizes"
         )
+        
+        # Chuyển labels thành index
         selected_indices = [prizes_labels.index(p) for p in selected_prizes]
 
     # --- Cột 3: Cấu hình ---
@@ -163,6 +161,7 @@ with tabs[1]:
             if not rows_mn:
                 st.error(f"Không tải được dữ liệu cho đài {station_sel}.")
             else:
+                # Xử lý chọn tuần
                 idx_tuan = min(lui_tuan, len(rows_mn)-1)
                 target_row = rows_mn[idx_tuan]
                 target_date = target_row["ObjDate"]
@@ -190,7 +189,7 @@ with tabs[1]:
                         missing = sorted(list(all_set - set(nhi_hop_res)))
                         st.write(f"- **Mức 0** ({len(missing)} số): {', '.join(missing)}")
                     else:
-                        st.warning("⚠️ Vui lòng bấm '🔥 Combo 4 Giải' hoặc tick chọn giải.")
+                        st.warning("⚠️ Vui lòng bấm '✅ Chọn Hết' hoặc tick chọn giải.")
 
                 # === PHẦN 2: SO SÁNH VỚI MB TUẦN TIẾP THEO ===
                 with c_res2:
@@ -330,6 +329,7 @@ with tabs[4]:
                     st.write("**Nhật ký xuất hiện:**")
 
                     st.dataframe(pd.DataFrame(logs), use_container_width=True, height=400)
+
 
 
 
