@@ -55,43 +55,6 @@ with tabs[0]:
             else:
                 st.error("Không tải được dữ liệu MB.")
 
-# --- Cột 2: Chọn Giải (Đã sửa theo yêu cầu Combo) ---
-    with col_t7_2:
-        st.write("<b>Chọn Giải để tính Nhị Hợp:</b>", unsafe_allow_html=True)
-        
-        prizes_labels = ["ĐB", "G1", "G2", "G3-1", "G3-2", "G4-1", "G4-2", "G4-3", "G4-4", "G4-5", "G4-6", "G4-7", "G5", "G6-1", "G6-2", "G6-3", "G7", "G8"]
-        
-        # Khởi tạo session state nếu chưa có
-        if "t7_selected_prizes" not in st.session_state:
-            st.session_state.t7_selected_prizes = []
-
-        # === TẠO 2 NÚT COMBO + 1 NÚT XÓA ===
-        c_btn1, c_btn2, c_btn3 = st.columns(3)
-        
-        # Combo 1: G1 + ĐB
-        if c_btn1.button("G1 + ĐB", use_container_width=True):
-            st.session_state.t7_selected_prizes = ["ĐB", "G1"]
-            st.rerun()
-        
-        # Combo 2: G7 + G8
-        if c_btn2.button("G7 + G8", use_container_width=True):
-            st.session_state.t7_selected_prizes = ["G7", "G8"]
-            st.rerun()
-
-        # Nút Xóa (để reset nếu muốn chọn lại từ đầu)
-        if c_btn3.button("❌ Xóa", use_container_width=True):
-            st.session_state.t7_selected_prizes = []
-            st.rerun()
-
-        # Multiselect liên kết với session_state
-        selected_prizes = st.multiselect(
-            "Danh sách giải đang chọn:", 
-            prizes_labels, 
-            key="t7_selected_prizes"
-        )
-        
-        # Chuyển labels thành index để xử lý
-        selected_indices = [prizes_labels.index(p) for p in selected_prizes]
 # =================================================
 # TAB 2: MN/MT THỨ 7 (LOGIC PHỨC TẠP)
 # =================================================
@@ -119,7 +82,7 @@ with tabs[1]:
     with col_t7_2:
         st.write("<b>Chọn Giải để tính Nhị Hợp:</b>", unsafe_allow_html=True)
         
-        prizes_labels = ["ĐB", "G1", "G7", "G8"]
+        prizes_labels = ["ĐB", "G1", "G2", "G3-1", "G3-2", "G4-1", "G4-2", "G4-3", "G4-4", "G4-5", "G4-6", "G4-7", "G5", "G6-1", "G6-2", "G6-3", "G7", "G8"]
         
         # Khởi tạo session state nếu chưa có
         if "t7_selected_prizes" not in st.session_state:
@@ -219,6 +182,7 @@ with tabs[1]:
                         st.success(f"🎉 CHÚC MỪNG! Dàn đã nổ ở MB: {', '.join(found_in_mb)}")
                     else:
                         st.info("Chưa thấy nổ ở giải ĐB MB trong tuần này.")
+
 # =================================================
 # TAB 3: TẦN SUẤT DÀN SỐ
 # =================================================
@@ -327,9 +291,4 @@ with tabs[4]:
                     st.dataframe(df_freq, use_container_width=True, height=400)
                 with res_c2:
                     st.write("**Nhật ký xuất hiện:**")
-
                     st.dataframe(pd.DataFrame(logs), use_container_width=True, height=400)
-
-
-
-
