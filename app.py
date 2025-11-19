@@ -16,7 +16,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-header">🐔 HỆ THỐNG SOI CẦU SIÊU GÀ 18+</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">🐔 HỆ THỐNG SIÊU GÀ 18 tủi</div>', unsafe_allow_html=True)
 
 # Menu Tabs
 tabs = st.tabs([
@@ -82,7 +82,7 @@ with tabs[1]:
     with col_t7_2:
         st.write("<b>Chọn Giải để tính Nhị Hợp:</b>", unsafe_allow_html=True)
         
-        prizes_labels = ["ĐB", "G1", "G2", "G3-1", "G3-2", "G4-1", "G4-2", "G4-3", "G4-4", "G4-5", "G4-6", "G4-7", "G5", "G6-1", "G6-2", "G6-3", "G7", "G8"]
+        prizes_labels = ["ĐB", "G1", "G7", "G8"]
         
         # Khởi tạo session state nếu chưa có
         if "t7_selected_prizes" not in st.session_state:
@@ -292,3 +292,4 @@ with tabs[4]:
                 with res_c2:
                     st.write("**Nhật ký xuất hiện:**")
                     st.dataframe(pd.DataFrame(logs), use_container_width=True, height=400)
+
