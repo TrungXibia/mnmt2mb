@@ -63,20 +63,20 @@ with tabs[1]:
     
     col_t7_1, col_t7_2, col_t7_3 = st.columns(3)
     
-    # --- Cột 1: Chọn Đài ---
+    # --- Cột 1: Chọn Đài (ĐÃ SỬA LẠI ĐÚNG LỊCH T7) ---
     with col_t7_1:
         region_t7 = st.radio("Chọn Miền", ["Miền Nam", "Miền Trung"], horizontal=True)
-        filter_reg = "MN" if region_t7 == "Miền Nam" else "MT"
         
-        stations_t7 = [k for k, v in utils.ALL_STATIONS.items() if v["region"] == filter_reg]
-        default_t7 = ["Hồ Chí Minh", "Long An", "Bình Phước", "Hậu Giang"] if filter_reg == "MN" else ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"]
-        valid_defaults = [s for s in default_t7 if s in stations_t7]
+        # Định nghĩa cứng danh sách đài Thứ 7 chuẩn
+        if region_t7 == "Miền Nam":
+            # 4 đài MN Thứ 7
+            stations_t7 = ["Hồ Chí Minh", "Long An", "Bình Phước", "Hậu Giang"]
+        else:
+            # 3 đài MT Thứ 7
+            stations_t7 = ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"]
         
-        station_sel = st.selectbox(
-            "Chọn đài Thứ 7", 
-            stations_t7, 
-            index=stations_t7.index(valid_defaults[0]) if valid_defaults else 0
-        )
+        # Chỉ hiển thị các đài đúng lịch Thứ 7
+        station_sel = st.selectbox("Chọn đài Thứ 7", stations_t7)
 
     # --- Cột 2: Chọn Giải (Có nút bấm nhanh) ---
     with col_t7_2:
@@ -122,8 +122,9 @@ with tabs[1]:
             mb_dict = utils.get_mb_full_dict(limit=150)
             
             if not rows_mn:
-                st.error("Không có dữ liệu cho đài này.")
+                st.error(f"Không tải được dữ liệu cho đài {station_sel}.")
             else:
+                # Xử lý chọn tuần
                 idx_tuan = min(lui_tuan, len(rows_mn)-1)
                 target_row = rows_mn[idx_tuan]
                 target_date = target_row["ObjDate"]
@@ -292,3 +293,4 @@ with tabs[4]:
                     st.write("**Nhật ký xuất hiện:**")
 
                     st.dataframe(pd.DataFrame(logs), use_container_width=True, height=400)
+
