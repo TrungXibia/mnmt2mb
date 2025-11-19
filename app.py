@@ -55,30 +55,7 @@ with tabs[0]:
             else:
                 st.error("Không tải được dữ liệu MB.")
 
-# =================================================
-# TAB 2: MN/MT THỨ 7 (LOGIC PHỨC TẠP)
-# =================================================
-with tabs[1]:
-    st.subheader("Phân tích Thứ 7 (MN/MT) & So sánh MB")
-    
-    col_t7_1, col_t7_2, col_t7_3 = st.columns(3)
-    
-    # --- Cột 1: Chọn Đài (ĐÃ SỬA LẠI ĐÚNG LỊCH T7) ---
-    with col_t7_1:
-        region_t7 = st.radio("Chọn Miền", ["Miền Nam", "Miền Trung"], horizontal=True)
-        
-        # Định nghĩa cứng danh sách đài Thứ 7 chuẩn
-        if region_t7 == "Miền Nam":
-            # 4 đài MN Thứ 7
-            stations_t7 = ["Hồ Chí Minh", "Long An", "Bình Phước", "Hậu Giang"]
-        else:
-            # 3 đài MT Thứ 7
-            stations_t7 = ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"]
-        
-        # Chỉ hiển thị các đài đúng lịch Thứ 7
-        station_sel = st.selectbox("Chọn đài Thứ 7", stations_t7)
-
-    # --- Cột 2: Chọn Giải (Có nút bấm nhanh) ---
+# --- Cột 2: Chọn Giải (Đã sửa theo yêu cầu Combo) ---
     with col_t7_2:
         st.write("<b>Chọn Giải để tính Nhị Hợp:</b>", unsafe_allow_html=True)
         
@@ -88,100 +65,33 @@ with tabs[1]:
         if "t7_selected_prizes" not in st.session_state:
             st.session_state.t7_selected_prizes = []
 
-        # Hai nút bấm điều khiển
-        c_btn1, c_btn2 = st.columns(2)
-        if c_btn1.button("✅ Chọn Hết", use_container_width=True):
-            st.session_state.t7_selected_prizes = prizes_labels
+        # === TẠO 2 NÚT COMBO + 1 NÚT XÓA ===
+        c_btn1, c_btn2, c_btn3 = st.columns(3)
+        
+        # Combo 1: G1 + ĐB
+        if c_btn1.button("G1 + ĐB", use_container_width=True):
+            st.session_state.t7_selected_prizes = ["ĐB", "G1"]
             st.rerun()
         
-        if c_btn2.button("❌ Bỏ Chọn", use_container_width=True):
+        # Combo 2: G7 + G8
+        if c_btn2.button("G7 + G8", use_container_width=True):
+            st.session_state.t7_selected_prizes = ["G7", "G8"]
+            st.rerun()
+
+        # Nút Xóa (để reset nếu muốn chọn lại từ đầu)
+        if c_btn3.button("❌ Xóa", use_container_width=True):
             st.session_state.t7_selected_prizes = []
             st.rerun()
 
         # Multiselect liên kết với session_state
         selected_prizes = st.multiselect(
-            "Tick giải:", 
+            "Danh sách giải đang chọn:", 
             prizes_labels, 
             key="t7_selected_prizes"
         )
         
-        # Chuyển labels thành index
+        # Chuyển labels thành index để xử lý
         selected_indices = [prizes_labels.index(p) for p in selected_prizes]
-
-    # --- Cột 3: Cấu hình ---
-    with col_t7_3:
-        st.write("<b>Cấu hình so sánh:</b>", unsafe_allow_html=True)
-        lui_tuan = st.number_input("Lùi (tuần)", min_value=0, max_value=10, value=0)
-        
-    st.markdown("---")
-    
-    # --- Nút chạy phân tích ---
-    if st.button("⚡ Phân tích Thứ 7", type="primary", use_container_width=True):
-        with st.spinner("Đang xử lý..."):
-            rows_mn = utils.get_data_thu7(station_sel)
-            mb_dict = utils.get_mb_full_dict(limit=150)
-            
-            if not rows_mn:
-                st.error(f"Không tải được dữ liệu cho đài {station_sel}.")
-            else:
-                # Xử lý chọn tuần
-                idx_tuan = min(lui_tuan, len(rows_mn)-1)
-                target_row = rows_mn[idx_tuan]
-                target_date = target_row["ObjDate"]
-                
-                st.success(f"Đang phân tích ngày: **{target_row['Date']}** ({station_sel})")
-                
-                # === PHẦN 1: NHỊ HỢP ===
-                nhi_hop_res = utils.analyze_nhi_hop(target_row["Prizes"], selected_indices)
-                
-                c_res1, c_res2 = st.columns(2)
-                with c_res1:
-                    st.markdown("#### 1. Kết quả Nhị Hợp")
-                    if nhi_hop_res:
-                        st.text_area("Dàn số tạo được:", ", ".join(nhi_hop_res), height=120)
-                        counts = Counter(nhi_hop_res)
-                        max_cnt = max(counts.values()) if counts else 0
-                        
-                        st.markdown("**Phân loại mức số:**")
-                        for muc in range(max_cnt, 0, -1):
-                            group = [n for n, c in counts.items() if c == muc]
-                            if group:
-                                st.write(f"- **Mức {muc}** ({len(group)} số): {', '.join(group)}")
-                        
-                        all_set = set(f"{i:02d}" for i in range(100))
-                        missing = sorted(list(all_set - set(nhi_hop_res)))
-                        st.write(f"- **Mức 0** ({len(missing)} số): {', '.join(missing)}")
-                    else:
-                        st.warning("⚠️ Vui lòng bấm '✅ Chọn Hết' hoặc tick chọn giải.")
-
-                # === PHẦN 2: SO SÁNH VỚI MB TUẦN TIẾP THEO ===
-                with c_res2:
-                    st.markdown("#### 2. Đối chiếu MB (T7 -> T7 tuần sau)")
-                    next_days = []
-                    for i in range(8):
-                        d = target_date + datetime.timedelta(days=i)
-                        next_days.append(d.strftime("%d/%m/%Y"))
-                    
-                    found_in_mb = []
-                    mb_check_log = []
-                    for day in next_days:
-                        prizes_mb = mb_dict.get(day, [])
-                        if prizes_mb:
-                            db_mb = prizes_mb[0][-2:] if prizes_mb[0] else "??"
-                            status = "✅ TRÚNG" if db_mb in nhi_hop_res else "❌ TRƯỢT"
-                            mb_check_log.append(f"| {day} | ĐB: **{db_mb}** | {status} |")
-                            
-                            if db_mb in nhi_hop_res:
-                                found_in_mb.append(f"{day} ({db_mb})")
-                        else:
-                            mb_check_log.append(f"| {day} | Chưa xổ | - |")
-
-                    st.markdown("\n".join(mb_check_log))
-                        
-                    if found_in_mb:
-                        st.success(f"🎉 CHÚC MỪNG! Dàn đã nổ ở MB: {', '.join(found_in_mb)}")
-                    else:
-                        st.info("Chưa thấy nổ ở giải ĐB MB trong tuần này.")
 
 # =================================================
 # TAB 3: TẦN SUẤT DÀN SỐ
@@ -293,4 +203,5 @@ with tabs[4]:
                     st.write("**Nhật ký xuất hiện:**")
 
                     st.dataframe(pd.DataFrame(logs), use_container_width=True, height=400)
+
 
