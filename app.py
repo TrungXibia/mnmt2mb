@@ -62,52 +62,73 @@ with tabs[1]:
     st.subheader("Phân tích Thứ 7 (MN/MT) & So sánh MB")
     
     col_t7_1, col_t7_2, col_t7_3 = st.columns(3)
+    
+    # --- Cột 1: Chọn Đài ---
     with col_t7_1:
-        # Chọn miền -> Lọc đài
         region_t7 = st.radio("Chọn Miền", ["Miền Nam", "Miền Trung"], horizontal=True)
         filter_reg = "MN" if region_t7 == "Miền Nam" else "MT"
         
-        # Lọc danh sách đài thuộc miền đã chọn
         stations_t7 = [k for k, v in utils.ALL_STATIONS.items() if v["region"] == filter_reg]
-        # Các đài hay quay thứ 7 (Gợi ý)
-        default_t7 = []
-        if filter_reg == "MN": default_t7 = ["Hồ Chí Minh", "Long An", "Bình Phước", "Hậu Giang"]
-        else: default_t7 = ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"]
-        
-        # Chỉ lấy những đài có trong danh sách API
+        default_t7 = ["Hồ Chí Minh", "Long An", "Bình Phước", "Hậu Giang"] if filter_reg == "MN" else ["Đà Nẵng", "Quảng Ngãi", "Đắk Nông"]
         valid_defaults = [s for s in default_t7 if s in stations_t7]
-        station_sel = st.selectbox("Chọn đài Thứ 7", stations_t7, index=stations_t7.index(valid_defaults[0]) if valid_defaults else 0)
+        
+        station_sel = st.selectbox(
+            "Chọn đài Thứ 7", 
+            stations_t7, 
+            index=stations_t7.index(valid_defaults[0]) if valid_defaults else 0
+        )
 
+    # --- Cột 2: Chọn Giải (Có nút bấm nhanh) ---
     with col_t7_2:
         st.write("<b>Chọn Giải để tính Nhị Hợp:</b>", unsafe_allow_html=True)
-        # Mapping tên giải với index (0-17)
+        
         prizes_labels = ["ĐB", "G1", "G2", "G3-1", "G3-2", "G4-1", "G4-2", "G4-3", "G4-4", "G4-5", "G4-6", "G4-7", "G5", "G6-1", "G6-2", "G6-3", "G7", "G8"]
         
-        # Mặc định chọn không giải nào để user tự tick
-        selected_prizes = st.multiselect("Tick giải:", prizes_labels, default=[])
+        # Khởi tạo session state nếu chưa có
+        if "t7_selected_prizes" not in st.session_state:
+            st.session_state.t7_selected_prizes = []
+
+        # Hai nút bấm điều khiển
+        c_btn1, c_btn2 = st.columns(2)
+        if c_btn1.button("✅ Chọn Hết", use_container_width=True):
+            st.session_state.t7_selected_prizes = prizes_labels
+            st.rerun()
+        
+        if c_btn2.button("❌ Bỏ Chọn", use_container_width=True):
+            st.session_state.t7_selected_prizes = []
+            st.rerun()
+
+        # Multiselect liên kết với session_state
+        selected_prizes = st.multiselect(
+            "Tick giải:", 
+            prizes_labels, 
+            key="t7_selected_prizes"
+        )
+        
         # Chuyển labels thành index
         selected_indices = [prizes_labels.index(p) for p in selected_prizes]
 
+    # --- Cột 3: Cấu hình ---
     with col_t7_3:
         st.write("<b>Cấu hình so sánh:</b>", unsafe_allow_html=True)
         lui_tuan = st.number_input("Lùi (tuần)", min_value=0, max_value=10, value=0)
         
-    if st.button("⚡ Phân tích Thứ 7"):
+    st.markdown("---")
+    
+    # --- Nút chạy phân tích ---
+    if st.button("⚡ Phân tích Thứ 7", type="primary", use_container_width=True):
         with st.spinner("Đang xử lý..."):
-            # 1. Lấy data đài Thứ 7
             rows_mn = utils.get_data_thu7(station_sel)
-            # 2. Lấy data MB full
             mb_dict = utils.get_mb_full_dict(limit=150)
             
             if not rows_mn:
                 st.error("Không có dữ liệu cho đài này.")
             else:
-                # Chỉ lấy tuần được chọn (lùi)
                 idx_tuan = min(lui_tuan, len(rows_mn)-1)
                 target_row = rows_mn[idx_tuan]
                 target_date = target_row["ObjDate"]
                 
-                st.info(f"Đang phân tích ngày: **{target_row['Date']}** ({station_sel})")
+                st.success(f"Đang phân tích ngày: **{target_row['Date']}** ({station_sel})")
                 
                 # === PHẦN 1: NHỊ HỢP ===
                 nhi_hop_res = utils.analyze_nhi_hop(target_row["Prizes"], selected_indices)
@@ -116,59 +137,48 @@ with tabs[1]:
                 with c_res1:
                     st.markdown("#### 1. Kết quả Nhị Hợp")
                     if nhi_hop_res:
-                        st.text_area("Dàn số tạo được:", ", ".join(nhi_hop_res), height=100)
-                        # Đếm tần suất các số trong Nhị hợp
+                        st.text_area("Dàn số tạo được:", ", ".join(nhi_hop_res), height=120)
                         counts = Counter(nhi_hop_res)
                         max_cnt = max(counts.values()) if counts else 0
                         
-                        # Phân loại mức
                         st.markdown("**Phân loại mức số:**")
-                        levels_found = []
                         for muc in range(max_cnt, 0, -1):
                             group = [n for n, c in counts.items() if c == muc]
                             if group:
-                                lv_text = utils.read_level(muc)
-                                st.write(f"- Mức {lv_text} ({len(group)} số): {', '.join(group)}")
-                                levels_found.extend(group)
+                                st.write(f"- **Mức {muc}** ({len(group)} số): {', '.join(group)}")
                         
-                        # Mức không (00-99 không có trong nhị hợp)
                         all_set = set(f"{i:02d}" for i in range(100))
                         missing = sorted(list(all_set - set(nhi_hop_res)))
-                        st.write(f"- Mức không ({len(missing)} số): {', '.join(missing)}")
+                        st.write(f"- **Mức 0** ({len(missing)} số): {', '.join(missing)}")
                     else:
-                        st.warning("Vui lòng tick chọn ít nhất 1 giải để tính nhị hợp.")
+                        st.warning("⚠️ Vui lòng bấm '✅ Chọn Hết' hoặc tick chọn giải.")
 
                 # === PHẦN 2: SO SÁNH VỚI MB TUẦN TIẾP THEO ===
                 with c_res2:
                     st.markdown("#### 2. Đối chiếu MB (T7 -> T7 tuần sau)")
-                    # Tìm 8 ngày tiếp theo (T7 này -> T7 tuần sau)
                     next_days = []
                     for i in range(8):
                         d = target_date + datetime.timedelta(days=i)
-                        d_str = d.strftime("%d/%m/%Y")
-                        next_days.append(d_str)
+                        next_days.append(d.strftime("%d/%m/%Y"))
                     
-                    # Kiểm tra xem các số trong Nhị Hợp có về ĐB MB trong tuần đó không
                     found_in_mb = []
-                    
                     mb_check_log = []
                     for day in next_days:
                         prizes_mb = mb_dict.get(day, [])
                         if prizes_mb:
-                            # Lấy ĐB MB
                             db_mb = prizes_mb[0][-2:] if prizes_mb[0] else "??"
-                            mb_check_log.append(f"{day}: ĐB {db_mb}")
+                            status = "✅ TRÚNG" if db_mb in nhi_hop_res else "❌ TRƯỢT"
+                            mb_check_log.append(f"| {day} | ĐB: **{db_mb}** | {status} |")
                             
                             if db_mb in nhi_hop_res:
-                                found_in_mb.append(f"{day} (ĐB {db_mb})")
+                                found_in_mb.append(f"{day} ({db_mb})")
                         else:
-                            mb_check_log.append(f"{day}: Chưa xổ")
+                            mb_check_log.append(f"| {day} | Chưa xổ | - |")
 
-                    with st.expander("Chi tiết KQMB tuần đối chiếu"):
-                        st.write("\n".join(mb_check_log))
+                    st.markdown("\n".join(mb_check_log))
                         
                     if found_in_mb:
-                        st.success(f"🎉 Đã nổ ở MB: {', '.join(found_in_mb)}")
+                        st.success(f"🎉 CHÚC MỪNG! Dàn đã nổ ở MB: {', '.join(found_in_mb)}")
                     else:
                         st.info("Chưa thấy nổ ở giải ĐB MB trong tuần này.")
 
@@ -280,4 +290,5 @@ with tabs[4]:
                     st.dataframe(df_freq, use_container_width=True, height=400)
                 with res_c2:
                     st.write("**Nhật ký xuất hiện:**")
+
                     st.dataframe(pd.DataFrame(logs), use_container_width=True, height=400)
